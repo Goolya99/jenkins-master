@@ -1,0 +1,90 @@
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: jenkins-svc
+  namespace: jenkins-master
+spec:
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: http
+    - port: 50000
+      targetPort: 50000
+      name: agent
+  selector:
+    app: jenkins
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: jenkins
+  namespace: jenkins-master
+  labels:
+    app: jenkins
+spec:
+  replicas: 1
+  serviceName: jenkins-svc
+  selector:
+    matchLabels:
+      app: jenkins
+  template:
+    metadata:
+      labels:
+        app: jenkins
+    spec:
+      serviceAccountName: jenkins-admin
+      securityContext:
+        fsGroup: 1000
+        runAsUser: 1000
+      containers:
+        - name: jenkins
+          image: 036692858685.dkr.ecr.us-east-1.amazonaws.com/jenkins-master:jenkins-jcasc-centos
+          imagePullPolicy: Always
+          env:
+            - name: JENKINS_BUILD_USR
+              valueFrom:
+                secretKeyRef:
+                  name: jenkins-secrets
+                  key:  build_username
+            - name: JENKINS_BUILD_PW
+              valueFrom:
+                secretKeyRef:
+                  name: jenkins-secrets
+                  key: build_password
+            - name: JENKINS_ADMIN_USR
+              valueFrom:
+                secretKeyRef:
+                  name: jenkins-secrets
+                  key: admin_username           
+            - name: JENKINS_ADMIN_PW
+              valueFrom:
+                secretKeyRef:
+                  name: jenkins-secrets
+                  key: admin_password
+            - name: JENKINS_READ_USR
+              valueFrom:
+                secretKeyRef:
+                  name: jenkins-secrets
+                  key: read_username           
+            - name: JENKINS_READ_PW
+              valueFrom:
+                secretKeyRef:
+                  name: jenkins-secrets
+                  key: read_password
+          ports:
+            - name: http-port
+              containerPort: 8080
+            - name: jnlp-port
+              containerPort: 50000
+          volumeMounts:
+            - name: secret-store
+              mountPath: "/mnt/secret-store"
+              readOnly: true 
+      volumes: 
+      - name: secret-store 
+        csi: 
+          driver: secrets-store.csi.k8s.io 
+          readOnly: true 
+          volumeAttributes: 
+            secretProviderClass: "jenkins-secrets"

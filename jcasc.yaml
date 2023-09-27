@@ -1,0 +1,63 @@
+jenkins:
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+       - id: ${JENKINS_ADMIN_USR}
+         password: ${JENKINS_ADMIN_PW}
+       - id: ${JENKINS_READ_USR}
+         password: ${JENKINS_READ_PW}
+       - id: ${JENKINS_BUILD_USR}
+         password: ${JENKINS_BUILD_PW}
+  authorizationStrategy:
+    globalMatrix:
+      permissions:
+        - "USER:Overall/Administer:${JENKINS_ADMIN_USR}"
+        - "USER:Overall/Read:${JENKINS_READ_USR}"
+        - "USER:Job/Read:${JENKINS_READ_USR}"
+        - "USER:Overall/Read:${JENKINS_BUILD_USR}"
+        - "USER:Job/Build:${JENKINS_BUILD_USR}"
+        - "USER:Job/Cancel:${JENKINS_BUILD_USR}"
+        - "USER:Job/Read:${JENKINS_BUILD_USR}"
+        - "USER:Job/Workspace:${JENKINS_BUILD_USR}"
+        - "USER:Run/Replay:${JENKINS_BUILD_USR}"
+        - "USER:Run/Update:${JENKINS_BUILD_USR}"
+  remotingSecurity:
+    enabled: true
+  clouds:
+  - kubernetes:
+      jenkinsTunnel: "jenkins-svc:50000"
+      jenkinsUrl: "http://jenkins-svc:8080"
+      name: "kubernetes"
+      namespace: "jenkins-master"
+      serverUrl: "https://kubernetes.default:443"
+      templates:
+      - containers:
+        - args: "9999999"
+          command: "sleep"
+          image: "alpine"
+          livenessProbe:
+            failureThreshold: 0
+            initialDelaySeconds: 0
+            periodSeconds: 0
+            successThreshold: 0
+            timeoutSeconds: 0
+          name: "default"
+          workingDir: "/home/jenkins/agent"
+        label: "slave"
+        name: "default"
+        namespace: "jenkins-master"
+        yamlMergeStrategy: "override"
+security:
+  queueItemAuthenticator:
+    authenticators:
+    - global:
+        strategy: triggeringUsersAuthorizationStrategy
+unclassified:
+  location:
+    url: http://jenkinsmaster.312centos.com/
+tool:
+  git:
+    installations:
+      - name: git
+        home: /usr/local/bin/git

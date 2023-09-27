@@ -1,0 +1,23 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: jenkins-ingress
+  namespace: jenkins-master
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: jenkinsmaster.312centos.com
+    ingress.kubernetes.io/rewrite-target: "true"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: jenkinsmaster.312centos.com
+    http:
+      paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: jenkins-svc
+              port: 
+                number: 8080
+
+
